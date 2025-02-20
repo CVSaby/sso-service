@@ -14,13 +14,13 @@ import (
 
 type Auth struct {
 	log          *slog.Logger
-	jwtCfg       *config.JWTConfig
+	jwtCfg       config.JWTConfig
 	userSaver    UserSaver
 	userProvider UserProvider
 }
 
 type UserSaver interface {
-	SaveUser(ctx context.Context, email string, passHash []byte) (uid int64, err error)
+	SaveUser(ctx context.Context, email string, passHash []byte, usrType models.UserType) (uid string, err error)
 }
 
 type UserProvider interface {
@@ -32,7 +32,7 @@ var (
 	ErrUserExists         = errors.New("user already exists")
 )
 
-func New(log *slog.Logger, userProvider UserProvider, userSaver UserSaver, jwtCfg *config.JWTConfig) *Auth {
+func New(log *slog.Logger, userProvider UserProvider, userSaver UserSaver, jwtCfg config.JWTConfig) *Auth {
 	return &Auth{
 		log:          log,
 		userSaver:    userSaver,
@@ -41,7 +41,7 @@ func New(log *slog.Logger, userProvider UserProvider, userSaver UserSaver, jwtCf
 	}
 }
 
-func (a *Auth) RegisterUser(ctx context.Context, email string, password string) (userID int64, err error) {
+func (a *Auth) RegisterUser(ctx context.Context, email string, password string, usrType models.UserType) (userID string, err error) {
 	const op = "auth.RegisterUser"
 
 	log := a.log.With(
@@ -52,18 +52,18 @@ func (a *Auth) RegisterUser(ctx context.Context, email string, password string) 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Error("failed to generate password hash", slog.String("error", err.Error()))
-		return 0, fmt.Errorf("%w: %s", err, op)
+		return "", fmt.Errorf("%w: %s", err, op)
 	}
 
-	id, err := a.userSaver.SaveUser(ctx, email, hash)
+	id, err := a.userSaver.SaveUser(ctx, email, hash, usrType)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserExists) {
 			log.Warn("user already exists", slog.String("error", err.Error()))
-			return 0, fmt.Errorf("%w: %s", ErrUserExists, op)
+			return "", fmt.Errorf("%w: %s", ErrUserExists, op)
 		}
 
 		log.Error("failed to save user", slog.String("error", err.Error()))
-		return 0, fmt.Errorf("%w: %s", err, op)
+		return "", fmt.Errorf("%w: %s", err, op)
 	}
 
 	return id, nil

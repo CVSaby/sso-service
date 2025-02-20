@@ -1,11 +1,10 @@
 package auth
 
-type LoginValidation struct {
+type RegisterReqValidation struct {
 	Email    string `validate:"required,email"`
-	Password string `validate:"required,min=8,max=16"`
+	Password string `validate:"required,gt=8,lte=16"`
 }
-
-type RegisterValidation struct {
+type LoginReqValidation struct {
 	Email    string `validate:"required,email"`
-	Password string `validate:"required,min=8,max=16"`
+	Password string `validate:"required"`
 }

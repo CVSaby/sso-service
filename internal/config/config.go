@@ -21,7 +21,7 @@ type GRPCConfig struct {
 }
 
 type JWTConfig struct {
-	Secret              string        `yaml:"secret" env-required:"true"`
+	Secret              string        `yaml:"secret_string" env-required:"true"`
 	AccessTokenLifeTime time.Duration `yaml:"access_token_life_time" env-default:"1h"`
 }
 
