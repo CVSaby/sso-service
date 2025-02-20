@@ -48,7 +48,11 @@ func fetchPaths() (cfgPath string, migPath string, migTable string) {
 	flag.Parse()
 
 	if migrationsPath == "" {
-		panic("No migrations path specified")
+		migrationsPath = os.Getenv("MIGRATIONS_PATH")
+	}
+
+	if cfg == "" {
+		cfg = os.Getenv("CONFIG_PATH")
 	}
 
 	return cfg, migrationsPath, migrationsTable

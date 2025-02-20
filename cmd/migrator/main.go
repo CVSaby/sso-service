@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	migratorconfig "github.com/CVSaby/sso-service/cmd/migrator/config"
+	"log"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -13,6 +14,7 @@ import (
 //postgres://username:password@localhost:5432/dbname?sslmode=disable
 
 func main() {
+	log.Println("Starting migration...")
 	cfg, migrationsPath, migrationsTable := migratorconfig.MustLoad()
 
 	migAddress := fmt.Sprintf(
