@@ -1,27 +1,32 @@
 package main
 
 import (
+	"context"
 	"github.com/CVSaby/sso-service/internal/app"
 	"github.com/CVSaby/sso-service/internal/config"
-	"log/slog"
+	"github.com/CVSaby/sso-service/internal/lib/otel"
+	otlp "go.opentelemetry.io/otel"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
-const (
-	envLocal = "local"
-	envProd  = "prod"
-)
-
 func main() {
 	cfg := config.MustLoad()
-	log := setupLogger(cfg.Env)
+	ctx := context.Background()
+
+	log, logProvider, meterProvider := otel.SetupOtel(
+		ctx, cfg.ServiceName,
+		cfg.ServiceVersion,
+		cfg.OTLPEndpoint,
+		cfg.Env,
+	)
+
+	otlp.SetMeterProvider(meterProvider)
 
 	log.Info("starting application")
 
-	application := app.New(log, cfg.GRPC.Port, cfg.TokenTTL, cfg.DBConfig, cfg.JWT)
-
+	application := app.New(log, cfg.GRPC.Port, cfg.DBConfig, cfg.JWT)
 	go application.GRPCApp.MustRun()
 
 	// Graceful shutdown
@@ -30,23 +35,6 @@ func main() {
 	<-stop
 
 	application.GRPCApp.Stop()
+	logProvider.Shutdown(ctx)
 	log.Info("application stopped")
-}
-
-func setupLogger(env string) *slog.Logger {
-	var log *slog.Logger
-
-	switch env {
-	case envLocal:
-		log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			Level: slog.LevelDebug,
-		}))
-
-	case envProd:
-		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level: slog.LevelInfo,
-		}))
-	}
-
-	return log
 }

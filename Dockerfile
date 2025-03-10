@@ -31,9 +31,10 @@ COPY --from=builder /app/config/local.yaml ./config/local.yaml
 RUN chmod +x /sso
 RUN chmod +x /migrator
 
+ENV CONFIG_TYPE="file"
 ENV CONFIG_PATH=config/local.yaml
+
 ENV MIGRATIONS_PATH=migrations
 
 EXPOSE 4000
-
 ENTRYPOINT ["sh", "-c", "./migrator && exec ./sso"]

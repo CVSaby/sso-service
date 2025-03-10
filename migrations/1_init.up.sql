@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-create type usr_type as ENUM('customer', 'seller');
+create type usr_type as ENUM('user', 'admin');
 
 CREATE TABLE IF NOT EXISTS users
 (

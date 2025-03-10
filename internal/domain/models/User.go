@@ -3,8 +3,8 @@ package models
 type UserType string
 
 const (
-	SELLER   UserType = "seller"
-	CUSTOMER UserType = "customer"
+	USER  UserType = "user"
+	ADMIN UserType = "admin"
 )
 
 type User struct {

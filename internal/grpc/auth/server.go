@@ -5,11 +5,13 @@ import (
 	"errors"
 	ssov1 "github.com/CVSaby/proto-contracts/gen/go/sso"
 	"github.com/CVSaby/sso-service/internal/domain/models"
+	appmetrics "github.com/CVSaby/sso-service/internal/lib/metric"
 	"github.com/CVSaby/sso-service/internal/services/auth"
 	"github.com/go-playground/validator/v10"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"time"
 )
 
 type Auther interface {
@@ -27,6 +29,9 @@ func Register(gRPC *grpc.Server, authService Auther) {
 }
 
 func (s *serverAPI) Login(ctx context.Context, req *ssov1.LoginRequest) (*ssov1.LoginResponse, error) {
+	start := time.Now()
+	appmetrics.ApiCounter.Add(ctx, 1)
+
 	if err := s.validateLoginReq(req); err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request body")
 	}
@@ -40,12 +45,17 @@ func (s *serverAPI) Login(ctx context.Context, req *ssov1.LoginRequest) (*ssov1.
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	appmetrics.ApiResponseTime.Record(ctx, time.Since(start).Seconds())
+
 	return &ssov1.LoginResponse{
 		Token: token,
 	}, nil
 }
 
 func (s *serverAPI) Register(ctx context.Context, req *ssov1.RegisterRequest) (*ssov1.RegisterResponse, error) {
+	start := time.Now()
+	appmetrics.ApiCounter.Add(ctx, 1)
+
 	var userType models.UserType
 
 	if err := s.validateRegisterReq(req); err != nil {
@@ -54,12 +64,12 @@ func (s *serverAPI) Register(ctx context.Context, req *ssov1.RegisterRequest) (*
 
 	rpcUserType := req.GetUserType()
 	switch rpcUserType {
-	case ssov1.UserType_customer:
-		userType = models.CUSTOMER
-	case ssov1.UserType_seller:
-		userType = models.SELLER
+	case ssov1.Role_user:
+		userType = models.USER
+	case ssov1.Role_admin:
+		userType = models.ADMIN
 	default:
-		userType = models.CUSTOMER
+		userType = models.USER
 	}
 
 	userID, err := s.auth.RegisterUser(ctx, req.GetEmail(), req.GetPassword(), userType)
@@ -70,6 +80,8 @@ func (s *serverAPI) Register(ctx context.Context, req *ssov1.RegisterRequest) (*
 
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	appmetrics.ApiResponseTime.Record(ctx, time.Since(start).Seconds())
 
 	return &ssov1.RegisterResponse{UserId: userID}, nil
 }

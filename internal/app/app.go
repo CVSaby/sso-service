@@ -6,7 +6,6 @@ import (
 	"github.com/CVSaby/sso-service/internal/services/auth"
 	"github.com/CVSaby/sso-service/internal/storage/psql"
 	"log/slog"
-	"time"
 )
 
 type App struct {
@@ -16,7 +15,6 @@ type App struct {
 func New(
 	logger *slog.Logger,
 	grpcPort int,
-	tokenTTL time.Duration,
 	dbConfig config.DBConfig,
 	jwtCfg config.JWTConfig,
 ) *App {

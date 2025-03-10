@@ -1,40 +1,65 @@
 package config
 
 import (
-	"flag"
+	"github.com/caarlos0/env/v11"
 	"github.com/ilyakaznacheev/cleanenv"
 	"os"
 	"time"
 )
 
 type Config struct {
-	Env      string        `yaml:"env" env-default:"local"`
-	TokenTTL time.Duration `yaml:"token_ttl" env-default:"1h"`
-	GRPC     GRPCConfig    `yaml:"grpc" env-required:"true"`
-	JWT      JWTConfig     `yaml:"jwt" env-required:"true"`
-	DBConfig DBConfig      `yaml:"db" env-required:"true"`
+	Env string `yaml:"env" env-default:"prod" env:"env" envDefault:"prod"`
+
+	ServiceName    string `yaml:"service_name" env:"SERVICE_NAME,required"`
+	ServiceVersion string `yaml:"service_version" env:"SERVICE_VERSION,required"`
+
+	OTLPEndpoint string `yaml:"otlp_endpoint" env:"OTLP_ENDPOINT,required"`
+
+	GRPC     GRPCConfig `yaml:"grpc" env-required:"true"`
+	JWT      JWTConfig  `yaml:"jwt" env-required:"true"`
+	DBConfig DBConfig   `yaml:"db" env-required:"true"`
+}
+
+type LoggerConfig struct {
+	LoggerAddr string `yaml:"logger_addr" env-required:"true" env:"LOGGER_ADDR"`
 }
 
 type GRPCConfig struct {
-	Port    int           `yaml:"port" env-default:"4000"`
-	Timeout time.Duration `yaml:"timeout"`
+	Port    int           `yaml:"port" env-default:"4000" env:"GRPC_PORT,required"`
+	Timeout time.Duration `yaml:"timeout" env:"GRPC_TIMEOUT" envDefault:"5s"`
 }
 
 type JWTConfig struct {
-	Secret              string        `yaml:"secret_string" env-required:"true"`
-	AccessTokenLifeTime time.Duration `yaml:"access_token_life_time" env-default:"1h"`
+	Secret              string        `yaml:"secret_string" env-required:"true" env:"JWT_SECRET,required"`
+	AccessTokenLifeTime time.Duration `yaml:"access_token_life_time" env-default:"1h" env:"JWT_ACCESS_TOKEN_LIFE_TIME,required"`
 }
 
 type DBConfig struct {
-	Host   string `yaml:"host" env-required:"true"`
-	Port   int    `yaml:"port" env-default:"5432"`
-	DBName string `yaml:"db_name" env-required:"true"`
-	DBUser string `yaml:"db_user" env-required:"true"`
-	DBPass string `yaml:"db_password" env-required:"true"`
+	Host   string `yaml:"host" env-required:"true" env:"DB_HOST,required"`
+	Port   int    `yaml:"port" env-default:"5432" env:"DB_PORT,required"`
+	DBName string `yaml:"db_name" env-required:"true" env:"DB_NAME,required"`
+	DBUser string `yaml:"db_user" env-required:"true" env:"DB_USER,required"`
+	DBPass string `yaml:"db_password" env-required:"true" env:"DB_PASSWORD,required"`
 }
 
 func MustLoad() *Config {
-	path := fetchConfigPath()
+	cfgType := os.Getenv("CONFIG_TYPE")
+	if cfgType == "" {
+		panic("config_type environment variable not set")
+	}
+
+	switch cfgType {
+	case "file":
+		return loadConfigFromFile()
+	case "env":
+		return loadConfigFromEnv()
+	default:
+		return loadConfigFromEnv()
+	}
+}
+
+func loadConfigFromFile() *Config {
+	path := os.Getenv("CONFIG_PATH")
 	if path == "" {
 		panic("config path is empty")
 	}
@@ -52,18 +77,17 @@ func MustLoad() *Config {
 	return &cfg
 }
 
-// fetchConfigPath fetches config path from command line flag or env variable.
-// Priority: flag > env > default.
-// Default value is empty string.
-func fetchConfigPath() string {
-	var res string
-
-	flag.StringVar(&res, "config", "", "path to config file")
-	flag.Parse()
-
-	if res == "" {
-		res = os.Getenv("CONFIG_PATH")
+func loadConfigFromEnv() *Config {
+	var cfg Config
+	err := env.Parse(&cfg)
+	if err != nil {
+		panic("Failed to parse config: " + err.Error())
 	}
 
-	return res
+	cfg, err = env.ParseAs[Config]()
+	if err != nil {
+		panic("Failed to parse config: " + err.Error())
+	}
+
+	return &cfg
 }

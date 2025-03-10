@@ -1,14 +1,21 @@
 version: '3'
 
 tasks:
+  run:
+    env:
+      CONFIG_TYPE: "file"
+      CONFIG_PATH: "config/local.yaml"
+    cmds:
+      - go run ./cmd/sso/main.go
+
   migrate:
     cmds:
-      - go run ./cmd/migrator --migrations-path=./migrations --config=./config/local.yaml
+      - go run ./cmd/migrator --migrations-path=./migrations
 
   docker-build:
     cmds:
-      - docker build -t ssoservice .
+      - docker build -t sso-service .
 
   docker-run:
     cmds:
-      - docker run -d --name sso-service -p 4000:4000 ssoservice
+      - docker run -d --name sso-service -p 4000:4000 sso-service
