@@ -32,7 +32,10 @@ func TracingInterceptor(tracer trace.Tracer) grpc.UnaryServerInterceptor {
 		}
 
 		// Start a new span
-		ctx, span = tracer.Start(ctx, fmt.Sprintf("%s %s", "grpcServer", info.FullMethod))
+		ctx, span = tracer.Start(ctx,
+			fmt.Sprintf("%s %s", "grpcServer", info.FullMethod),
+			trace.WithSpanKind(trace.SpanKindInternal),
+		)
 		defer span.End()
 
 		// Set span attributes
