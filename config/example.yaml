@@ -1,14 +1,23 @@
 env: "prod"
-token_ttl: 1h
+
+service_name: "sso-service"
+service_version: "0.0.1"
+
+otlp_endpoint: "192.168.3.46:4318"
+
 grpc:
   port: 4000
   timeout: 5s
+kafka:
+  servers: [ '192.168.3.46:9092' ]
+  client_id: "sso-service"
+  topic: "RegisteredUsers"
 jwt:
-  secret_string: ""
+  secret_string: "asdjoi2232349ief=23i12kd=9240@s092dasd"
   access_token_life_time: 1h
 db:
-  host: ""
+  host: "192.168.3.46"
   port: 5432
-  db_name: ""
-  db_user: ""
-  db_password: ""
+  db_name: "saby-marketplace"
+  db_user: "sso-service"
+  db_password: "asdasd"

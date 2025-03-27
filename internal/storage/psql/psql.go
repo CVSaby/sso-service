@@ -7,6 +7,7 @@ import (
 	"github.com/CVSaby/sso-service/internal/config"
 	"github.com/CVSaby/sso-service/internal/domain/models"
 	"github.com/CVSaby/sso-service/internal/storage"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -62,6 +63,23 @@ func (s *Storage) User(ctx context.Context, email string) (user models.User, err
 	query := `SELECT id, email, pass_hash, user_type FROM users WHERE email = $1`
 
 	err = s.db.QueryRow(ctx, query, email).Scan(&user.ID, &user.Email, &user.PassHash, &user.UserType)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.User{}, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+		}
+
+		return models.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
+}
+
+func (s *Storage) UserByUUID(ctx context.Context, uuid uuid.UUID) (user models.User, err error) {
+	const op = "storage.psql.User"
+
+	query := `SELECT id, email, pass_hash, user_type FROM users WHERE id = $1`
+
+	err = s.db.QueryRow(ctx, query, uuid).Scan(&user.ID, &user.Email, &user.PassHash, &user.UserType)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return models.User{}, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)

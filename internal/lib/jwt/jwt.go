@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"errors"
+	"fmt"
 	"github.com/CVSaby/sso-service/internal/domain/models"
 	"github.com/golang-jwt/jwt/v5"
 	"time"
@@ -17,6 +18,7 @@ func NewToken(user models.User, duration time.Duration, secret string) (string, 
 	claims := token.Claims.(jwt.MapClaims)
 	claims["uid"] = user.ID
 	claims["email"] = user.Email
+	claims["Role"] = user.UserType
 	claims["exp"] = time.Now().Add(duration).Unix()
 
 	tokenString, err := token.SignedString([]byte(secret))
@@ -25,4 +27,24 @@ func NewToken(user models.User, duration time.Duration, secret string) (string, 
 	}
 
 	return tokenString, nil
+}
+
+func IsValidJWT(tokenString string, secret string) bool {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+
+		return []byte(secret), nil
+	})
+
+	if err != nil {
+		return false
+	}
+
+	if !token.Valid {
+		return false
+	}
+
+	return true
 }

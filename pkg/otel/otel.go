@@ -2,18 +2,21 @@ package otel
 
 import (
 	"context"
-	"github.com/CVSaby/sso-service/internal/lib/logger"
+	"log/slog"
+	"time"
+
+	"github.com/CVSaby/sso-service/pkg/logger"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
-	"log/slog"
-	"time"
 )
 
-func SetupOtel(ctx context.Context, serviceName string, serviceVersion string, OTLPEndpoint string, env string) (*slog.Logger, *log.LoggerProvider, *metric.MeterProvider) {
+func SetupOtel(ctx context.Context, serviceName string, serviceVersion string, OTLPEndpoint string, env string) (*slog.Logger, *log.LoggerProvider, *metric.MeterProvider, *sdktrace.TracerProvider) {
 	// OTLP Resource
 	res, err := NewResource(serviceName, serviceVersion)
 	if err != nil {
@@ -23,7 +26,18 @@ func SetupOtel(ctx context.Context, serviceName string, serviceVersion string, O
 	logger, logProvider := setupLogger(ctx, env, res, OTLPEndpoint)
 	meterProvider := setupMeter(ctx, res, OTLPEndpoint)
 
-	return logger, logProvider, meterProvider
+	tracer := setupTracer(ctx, res, OTLPEndpoint)
+
+	return logger, logProvider, meterProvider, tracer
+}
+
+func setupTracer(ctx context.Context, res *resource.Resource, otlpEnpoint string) *sdktrace.TracerProvider {
+	traceExporter, err := otlptracehttp.New(ctx, otlptracehttp.WithEndpoint(otlpEnpoint), otlptracehttp.WithInsecure())
+	if err != nil {
+		panic(err)
+	}
+
+	return sdktrace.NewTracerProvider(sdktrace.WithBatcher(traceExporter), sdktrace.WithResource(res))
 }
 
 func setupMeter(ctx context.Context, res *resource.Resource, OTLPEndpoint string) *metric.MeterProvider {

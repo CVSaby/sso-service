@@ -2,11 +2,15 @@ package grpcapp
 
 import (
 	"fmt"
-	authgrpc "github.com/CVSaby/sso-service/internal/grpc/auth"
+	authgrpc "github.com/CVSaby/sso-service/internal/transport/grpc/auth"
+	"github.com/CVSaby/sso-service/pkg/interceptors"
+	otlp "go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 	"log/slog"
 	"net"
 )
+
+var tracer = otlp.Tracer("github.com/CVSaby/sso-service")
 
 type App struct {
 	log        *slog.Logger
@@ -15,7 +19,9 @@ type App struct {
 }
 
 func New(log *slog.Logger, port int, authService authgrpc.Auther) *App {
-	gRPCServer := grpc.NewServer()
+	gRPCServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(interceptors.TracingInterceptor(tracer)),
+	)
 
 	authgrpc.Register(gRPCServer, authService)
 

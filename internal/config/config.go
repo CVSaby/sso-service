@@ -15,9 +15,17 @@ type Config struct {
 
 	OTLPEndpoint string `yaml:"otlp_endpoint" env:"OTLP_ENDPOINT,required"`
 
-	GRPC     GRPCConfig `yaml:"grpc" env-required:"true"`
-	JWT      JWTConfig  `yaml:"jwt" env-required:"true"`
-	DBConfig DBConfig   `yaml:"db" env-required:"true"`
+	GRPC        GRPCConfig  `yaml:"grpc" env-required:"true"`
+	KafkaConfig KafkaConfig `yaml:"kafka" env-required:"true"`
+
+	JWT      JWTConfig `yaml:"jwt" env-required:"true"`
+	DBConfig DBConfig  `yaml:"db" env-required:"true"`
+}
+
+type KafkaConfig struct {
+	Servers  []string `yaml:"servers" env-required:"true" env:"KAFKA_SERVERS,required"`
+	Topic    string   `yaml:"topic" env-required:"true" env:"KAFKA_TOPIC,required"`
+	ClientID string   `yaml:"client_id" env-required:"true" env:"KAFKA_CLIENT_ID,required"`
 }
 
 type LoggerConfig struct {

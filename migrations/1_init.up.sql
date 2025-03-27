@@ -1,12 +1,29 @@
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE
+EXTENSION IF NOT EXISTS "pgcrypto";
 
-create type usr_type as ENUM('user', 'admin');
+DO $$
+BEGIN
+    IF
+NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'usr_type') THEN
+CREATE TYPE usr_type AS ENUM('user', 'admin');
+END IF;
+END$$;
 
 CREATE TABLE IF NOT EXISTS users
 (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id
+    UUID
+    PRIMARY
+    KEY
+    DEFAULT
+    gen_random_uuid
+(
+),
     email TEXT NOT NULL UNIQUE,
-    pass_hash VARCHAR(300) NOT NUll,
+    pass_hash VARCHAR
+(
+    300
+) NOT NUll,
     user_type usr_type NOT NULL
     );
 
